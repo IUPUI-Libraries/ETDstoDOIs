@@ -47,17 +47,18 @@ def doiparse(newdir):
         # Title
         try:
             if 'dc.title[en_US]' in record and record['dc.title[en_US]']:
-                output.write('datacite.title: ' + escape(record['dc.title[en_US]'].split(':')[0]) + '\n')
+                # output.write('datacite.title: ' + escape(record['dc.title[en_US]'].split(':')[0]) + '\n')
+                output.write('datacite.title: ' + escape(record['dc.title[en_US]']) + '\n')
             elif 'dc.title[en-US]' in record and record['dc.title[en-US]']:
-                output.write('datacite.title: ' + escape(record['dc.title[en-US]'].split(':')[0]) + '\n')
+                output.write('datacite.title: ' + escape(record['dc.title[en-US]']) + '\n')
             elif 'dc.title[en]' in record and record['dc.title[en]']:
-                output.write('datacite.title: ' + escape(record['dc.title[en]'].split(':')[0]) + '\n')
+                output.write('datacite.title: ' + escape(record['dc.title[en]']) + '\n')
             elif 'dc.title[es]' in record and record['dc.title[es]']:
-                output.write('datacite.title: ' + escape(record['dc.title[es]'].split(':')[0]) + '\n')
+                output.write('datacite.title: ' + escape(record['dc.title[es]']) + '\n')
             elif 'dc.title[]' in record and record['dc.title[]']:
-                output.write('datacite.title: ' + escape(record['dc.title[]'].split(':')[0]) + '\n')
+                output.write('datacite.title: ' + escape(record['dc.title[]']) + '\n')
             elif 'dc.title' in record and record['dc.title']:
-               output.write('datacite.title: ' + escape(record['dc.title'].split(':')[0]) + '\n')
+               output.write('datacite.title: ' + escape(record['dc.title']) + '\n')
             else:
                 output.write('datacite.title: None\n')
                 with open(newdir + 'notitlesETDs.txt', 'a') as fother:
@@ -96,6 +97,8 @@ def main():
     parser.add_argument("-d", "--date", dest="date",
                         help="Date on or after that an ETD was published for \
                         creating DOIs. Put in format YYYY-MM")
+    parser.add_argument("-w", "--withdrawn", dest="withdrawn",
+                        help="Withdrawn item file with item ids")
     parser.add_argument("datafile", help="eCommons metadata worked from.")
 
     args = parser.parse_args()
@@ -104,9 +107,14 @@ def main():
         parser.print_help()
         parser.exit()
 
-    workingdir = csvparse(args.datafile, args.date)
-    doiparse(workingdir)
-    print('ANVL files available in: ' + workingdir)
+    if not args.withdrawn:
+        workingdir = csvparse(args.datafile, args.date)
+        doiparse(workingdir)
+        print('ANVL files available in: ' + workingdir)
+    else:
+        workingdir = csvparse(args.datafile, args.date, False, args.withdrawn)
+        doiparse(workingdir)
+        print('ANVL files available in: ' + workingdir)
 
 if __name__ == '__main__':
     # eventually add tests?

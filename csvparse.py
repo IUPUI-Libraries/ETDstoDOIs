@@ -145,12 +145,39 @@ def checkDOI(olddata):
     for record in olddata:
         # See if DOI is already there.
         try:
-            if not record['dc.identifier.doi'] and not record['dc.identifier.doi[]'] and not record['dc.identifier.doi[en_US]']:
+            if 'dc.identifier.doi' in record and record['dc.identifier.doi']:
+                continue
+            elif 'dc.identifier.doi[]' in record and record['dc.identifier.doi[]']:
+                continue
+            elif 'dc.identifier.doi[en_US]' in record and record['dc.identifier.doi[en_US]']:
+                continue
+            else:
                 newdata.append(record)
         except KeyError:
             newdata.append(record)
     return(newdata)
 
+def checkWithdrawn(olddata, withdrawn_file):
+    """Check if see if item has been withdrawn."""
+    newdata = []
+    withdrawn = []
+    # Make Array out of withdrawn
+    try:
+        f = open(withdrawn_file, "r")
+        if f.mode == 'r':
+            lines = f.readlines()
+            for line in lines:
+                withdrawn.append(line.strip())
+    except:
+        print "Withdrawn file could not be opened."
+    for record in olddata:
+        # See if item is withdrawn
+        try:
+            if not record['id'] in withdrawn:
+                newdata.append(record)
+        except KeyError:
+            print "Record ID missing"
+    return(newdata)
 
 def slimECdata(olddata):
     """Remove fields not needed for DOI generation or eCommons."""
@@ -164,7 +191,7 @@ def slimECdata(olddata):
     return(newdata)
 
 
-def csvparse(datafile, dateAfter, skipDOItest=False):
+def csvparse(datafile, dateAfter, skipDOItest=False, withdrawnfile=False):
     """Take eCommons CSV, rewrite for our needs (workflow step 2)."""
     with open(datafile, 'r') as ECfile:
         ECreader = csv.DictReader(ECfile)
@@ -174,11 +201,17 @@ def csvparse(datafile, dateAfter, skipDOItest=False):
     ECdataSlim = slimECdata(ECdata)
     # delete records for items issued after date provided
     ECdataDate = testDate(ECdataSlim, dateAfter)
+    print("Records in date range:" + str(len(ECdataDate)))
+    if withdrawnfile:
+        ECdataWithdrawn = checkWithdrawn(ECdataDate, withdrawnfile)
+        print("Records not withdrawn: " + str(len(ECdataWithdrawn)))
+    else:
+        ECdataWithdrawn = ECdataDate
     if not skipDOItest:
-        data = checkDOI(ECdataDate)
+        data = checkDOI(ECdataWithdrawn)
         print("Records to be updated with DOIs: " + str(len(data)))
     else:
-        data = ECdataDate
+        data = ECdataWithdrawn
         print("Records to be altered: " + str(len(data)))
     # Create working directory for this job
     now = time.localtime()[0:6]
